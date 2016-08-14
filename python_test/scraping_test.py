@@ -21,7 +21,6 @@ def scraping(url, output_name):
     print("desc: " + str(description_content))
     # output
     output = {"title": title, "description": description_content}
-    print(json)
     # write the output as a json file
     with open(output_name, "w") as fout:
         json.dump(output, fout, ensure_ascii=False, indent=4, sort_keys=True)
