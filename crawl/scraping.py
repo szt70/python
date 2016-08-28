@@ -17,13 +17,12 @@ from lib2to3.pgen2 import driver
 
 import requests
 from bs4 import BeautifulSoup
+from phantomJsUtils import PhantomJsUtils
 from selenium import webdriver
-from logging import config,getLogger
-config.dictConfig(yaml.load(open("logging.conf", encoding='UTF-8').read()))
-logger = getLogger("test")
+import config
+logger = config.getLogger("test")
 
 class Scraping:
-
 
     def scraping_requests(self, url):
         """ requests利用してスクレイピング
@@ -32,6 +31,7 @@ class Scraping:
         # get a HTML response
         response = requests.get(url)
         html = response.text.encode(response.encoding)  # prevent encoding errors
+
         # parse the response
         timeTotal = round(time.clock() - timeStart, 3);
         logger.debug("scraping {0} {1}s".format( url, timeTotal))
@@ -41,23 +41,37 @@ class Scraping:
         """ ユーザーエージェント、Cookieを設定してスクレイピング
         """
         timeStart = time.clock();
-        log_name = "/tmp/phantomjs.log" #ログを出力しない場合はos.path.devnull
-        userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53"
-        driver = webdriver.PhantomJS(
-            desired_capabilities={
-                'phantomjs.page.settings.userAgent': userAgent,
-            },
-            service_log_path=log_name
-                                     )
+        
+        pjs = PhantomJsUtils()
+        driver = pjs.getPhantomJsDriver()
         #JSON形式のファイルからCookie読み込み
         f = open("c:/tmp/cookie.json")
         cookieList = json.load(f)
 
         for c in cookieList:
             driver.add_cookie(c)
+        timeGetStart = time.clock()
         driver.get(url)
         html = driver.page_source
+        timeGetEnd = round(time.clock() - timeGetStart, 3)
 
-        timeTotal = round(time.clock() - timeStart, 3);
-        logger.debug("scraping(phantomJs) {0} {1}s".format( url, timeTotal))
+        timeTotal = round(time.clock() - timeStart, 3)
+        logger.debug("scraping(phantomJs) {0} {1}s(get:{2}s)".format( url, timeTotal, timeGetEnd))
         return html
+
+class HTMLParser():
+
+    def get(self, url, source):
+        
+        soup = BeautifulSoup(source)
+        text = '\n'.join(self.__getNavigableStrings(soup))
+        return text
+
+    def __getNavigableStrings(self, soup):
+      if isinstance(soup, NavigableString):
+        if type(soup) not in (Comment, Declaration) and soup.strip():
+          yield soup
+      elif soup.name not in ('script', 'style'):
+        for c in soup.contents:
+          for g in self.__getNavigableStrings(c):
+            yield g

@@ -8,23 +8,37 @@ import json
 import urllib
 import yaml
 from scraping import Scraping
+import htmlPerser
+from datetime import datetime
 from bs4 import BeautifulSoup 
+import hashlib
 from lib2to3.pgen2 import driver
 from selenium import webdriver
 from urllib.parse import urljoin
-from logging import config,getLogger
-config.dictConfig(yaml.load(open("logging.conf", encoding='UTF-8').read()))
-logger = getLogger("test")
+import config
+logger = config.getLogger("test")
 
 def crawl(pages, depth=2):
     setpages = set()
     sobj = Scraping()
+    parse = htmlPerser.HTMLParser();
     for i in range(depth):
         newpages = set()
         for page in pages:
             try:
-                c = sobj.scraping_requests(page)
-                soup = BeautifulSoup(c, "lxml")
+                html = sobj.scraping(page)
+                parseResult = parse.get(page, html).encode('utf-8')
+                # output
+                md5 = hashlib.md5(page.encode('utf-8')).hexdigest()
+                output = {"html": str(parseResult), "date": datetime.now().strftime('%Y/%m/%d %H:%M:%S'), "md5": md5, "url": page}
+                dir = "c:/tmp/crawldata/"
+                if not os.path.exists(dir):
+                    os.makedirs(dir)
+                filepath = dir + md5 + ".json";
+                # write the output as a json file
+                with open(filepath, "w") as fout:
+                    json.dump(output, fout, ensure_ascii=False, indent=4, sort_keys=True)
+                soup = BeautifulSoup(html, "lxml")
             except:
                 logger.exception("Could not open %s" % page + " ", traceback.format_exc())
                 continue
@@ -43,29 +57,6 @@ def crawl(pages, depth=2):
         pages = newpages
 
     return list(setpages)
-
-
-def scraping(url):
-    """スクレイピング
-    """
-
-    log_name = "/tmp/phantomjs.log"
-    userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53"
-    driver = webdriver.PhantomJS(
-        desired_capabilities={
-            'phantomjs.page.settings.userAgent': userAgent,
-        },
-        service_log_path=log_name
-                                 )
-    f = open("c:/tmp/cookie.json")
-    cookieList = json.load(f)
-
-    for c in cookieList:
-        driver.add_cookie(c)
-    driver.get(url)
-    html = driver.page_source
-    logger.debug('success scraping : ' + url)
-    return html
 
 
 if __name__ == "__main__":
