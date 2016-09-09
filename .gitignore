@@ -89,6 +89,6 @@ ENV/
 # Rope project settings
 .ropeproject
 
-.pyproj
-.sln
-.pyproj
+*.pyproj
+*.sln
+*.pyproj
