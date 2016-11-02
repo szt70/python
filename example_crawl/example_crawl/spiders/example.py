@@ -11,6 +11,22 @@ import time
 from browser.phantomJsUtils import PhantomJsUtils
 from bs4 import BeautifulSoup
 
+'''
+
+    1) HOMEディレクトリ以下の全PythonでExampleを任意の文字列に変更
+　  
+    2) settings.pyを編集
+    　　　　　scrapyログ ... LOG_FILE
+                結果出力先 ... FEED_URI
+　　　　　　その他設定
+    
+    3) parse_itemでパース処理
+        Ajaxページの場合はscraping_phantomJsを呼び出す
+
+    3) 実行
+       $ cd HOME_DIRECTORY
+       $ scrapy crawl <name>
+'''
 class ExampleSpider(CrawlSpider):
     name = "example"
     
@@ -29,7 +45,7 @@ class ExampleSpider(CrawlSpider):
     rules = (
             # スクレイピングするURLのルールを指定
             Rule(LinkExtractor( allow=allow_list, deny=deny_list), callback='parse_item'),
-            # spiderがたどるURLを指定
+            # スクレイピングしないがspiderがたどるURLを指定、follow=Trueで再帰的に
             Rule(LinkExtractor(), follow=True),
         )
 
@@ -55,15 +71,20 @@ class ExampleSpider(CrawlSpider):
         '''
         url = response.urljoin('')
         logging.debug("crawl_url item : {0}".format(url))
-        soup = self.scraping_phantomJs(url)
-        article_text = soup.select('p.ynDetailText')
-        logging.debug("article_text : {0}".format(article_text))
-        #article_text = response.xpath('//p[@class="ynDetailText"]/text()').extract()
+        #soup = self.scraping_phantomJs(url)#ynDetailText
+        #article_text_tag = soup.find(class_=re.compile('ynDetailText'))
+        #article_text = article_text_tag.text
+        article_text = response.xpath('//p[@class="ynDetailText"]/text()').extract()
+        if article_text is None or len(article_text) == 0:
+            logging.debug("none hit tag : {0}".format(url))
+            return
+        #logging.debug("article_text : {0}".format(article_text))
         article = ExampleCrawlItem()
         article['url'] = url
         article['title'] = response.selector.xpath('//title/text()').extract()[0].replace('\n','')
         article['text'] = ' '.join(article_text).replace('\n','')
         article['datetime'] = self.datetime_str();
+        logging.debug("get ParseText : {0}".format(url))
         #スクレイピング結果を出力
         yield article 
             
@@ -75,7 +96,8 @@ class ExampleSpider(CrawlSpider):
 
 
     def scraping_phantomJs(self, url):
-        """ ユーザーエージェント、Cookieを設定してスクレイピング
+        """ 
+            Ajaxページのスクレイピング
         """
         timeStart = time.clock();
         

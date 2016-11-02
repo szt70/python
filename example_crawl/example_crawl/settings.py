@@ -113,32 +113,23 @@ LOG_FILE = '/tmp/scrapy.log'
 #
 ##########################################################################
 
+# スクレイピング許可ドメイン、複数指定可
 ALLOWED_DOMAINS = ["news.yahoo.co.jp", "headlines.yahoo.co.jp"]
 
+# スクレイピングを開始するURL、複数指定可
 START_URLS = ['http://news.yahoo.co.jp/']
 
 #Cookie
 COOKIES = {
-    #test:value
+    "test":"value"
 }
 
+# PhantomJs用
 COOKIES_LIST=[
     {
-        "domain": ".blogmura.com",
+        "domain": ".test.com",
         "name": "__gads",
         "path": "/",
         "value": "ID=641422a78e56efd3:T=1414935735:S=ALNI_MYaaiv5JGTIabD0RybbFbROSYGYgg"
-    },
-    {
-        "domain": ".blogmura.com",
-        "name": "__utma",
-        "path": "/",
-        "value": "223914312.1094919441.1414935735.1459350107.1467031955.4"
-    },
-    {
-        "domain": ".blogmura.com",
-        "name": "__utmz",
-        "path": "/",
-        "value": "223914312.1459350107.3.1.utmccn=(referral)|utmcsr=google.co.jp|utmcct=/|utmcmd=referral"
     },
     ]
